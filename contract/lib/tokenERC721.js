@@ -57,6 +57,22 @@ class TokenERC721Contract extends Contract {
 	}
 
 	/**
+	 * 
+	 * @param {Context} ctx 
+	 * @param {String} creator an identity string of a client user
+	 * @returns All tokens created by a client user
+	 */
+	 async TokensCreatedBy(ctx, creator) {
+		let queryString = {};
+		queryString.selector = {};
+		queryString.selector.creator = creator;
+
+		let queryResults = await this._getQueryResultForQueryString(ctx, JSON.stringify(queryString));
+
+		return queryResults;
+	}
+
+	/**
 	 * TransferFrom transfers the ownership of a non-fungible token
 	 * from one owner to another owner
 	 *
@@ -66,7 +82,7 @@ class TokenERC721Contract extends Contract {
 	 * @param {String} tokenId the non-fungible token to transfer
 	 * @returns {Boolean} Return whether the transfer was successful or not
 	 */
-	async TransferFrom(ctx, from, to, tokenId) {
+	async TransferFrom(ctx, from, to, soldPrice, tokenId) {
 		const sender = ctx.clientIdentity.getID();
 
 		const nft = await this._readNFT(ctx, tokenId);
@@ -90,6 +106,7 @@ class TokenERC721Contract extends Contract {
 
 		// Overwrite a non-fungible token to assign a new owner.
 		nft.owner = to;
+		nft.soldPrice = soldPrice;
 		const nftKey = ctx.stub.createCompositeKey(nftPrefix, [tokenId]);
 		await ctx.stub.putState(nftKey, Buffer.from(JSON.stringify(nft)));
 
@@ -314,9 +331,12 @@ class TokenERC721Contract extends Contract {
 		if (isNaN(tokenIdInt)) {
 			throw new Error(`The tokenId ${tokenId} is invalid. tokenId must be an integer`);
 		}
+
 		const nft = {
 			tokenId: tokenIdInt,
+			creator: minter,
 			owner: minter,
+			soldPrice: null,
 			tokenURI: tokenURI
 		};
 		const nftKey = ctx.stub.createCompositeKey(nftPrefix, [tokenId]);
@@ -366,6 +386,21 @@ class TokenERC721Contract extends Contract {
 
 		return true;
 	}
+
+	/**
+	 * 
+	 * @param {Context} ctx 
+	 * @param {String} tokenId 
+	 * @returns 
+	 */
+	async GetTokenHistory(ctx, tokenId) {
+		if (!this._nftExists(ctx, tokenId)) throw new Error(`Non-fungible token ${tokenId} does not exist`);
+		const nftKey = ctx.stub.createCompositeKey(nftPrefix, [tokenId]);
+		let resultsIterator = await ctx.stub.getHistoryForKey(nftKey);
+		let result = await this._readAllRecords(resultsIterator, true);
+
+		return JSON.stringify(result);
+}
 
 	/**
 	 * ClientAccountBalance returns the balance of the requesting client's account.
