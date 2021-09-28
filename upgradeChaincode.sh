@@ -43,12 +43,14 @@ setGlobalsForPeer1Org2(){
     
 }
 
+sleep 5
+
 CHANNEL_NAME="mychannel"
 CC_RUNTIME_LANGUAGE="node"
 CC_SRC_PATH="./contract"
-CC_NAME="cert"
-VERSION="1.1"
-SEQUENCE="2"
+CC_NAME="ercToken"
+VERSION="1.0"
+SEQUENCE="1"
 
 PackageChaincode() {
     rm -rf ${CC_NAME}.tar.gz
@@ -73,7 +75,7 @@ InstallChaincode() {
 
 CheckCommitReadiness () {
     peer lifecycle chaincode checkcommitreadiness --channelID mychannel \
-    --name cert --version ${VERSION} --sequence ${SEQUENCE} \
+    --name ${CC_NAME} --version ${VERSION} --sequence ${SEQUENCE} \
     --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA --output json
 }
 
@@ -100,7 +102,7 @@ ApproveChaincode () {
     setGlobalsForPeer0Org2
 
     peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com \
-    --channelID $CHANNEL_NAME --name cert --version ${VERSION} \
+    --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${VERSION} \
     --package-id $PACKAGE_ID --sequence ${SEQUENCE} \
     --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA
     echo "CC is approved by peer0.Org2.example.com"
@@ -113,12 +115,12 @@ CommitChaincode () {
     setGlobalsForPeer0Org1
     peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com \
     --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
-    --channelID $CHANNEL_NAME --name cert --version ${VERSION} --sequence ${SEQUENCE} \
+    --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${VERSION} --sequence ${SEQUENCE} \
     --peerAddresses localhost:7051 --tlsRootCertFiles $PEER0_ORG1_CA \
     --peerAddresses localhost:9051 --tlsRootCertFiles $PEER0_ORG2_CA
     # --peerAddresses localhost:11051 --tlsRootCertFiles $PEER0_ORG3_CA
     echo "==================== Committing Chaincode ===================="
-    peer lifecycle chaincode querycommitted --channelID mychannel --name cert --cafile $ORDERER_CA
+    peer lifecycle chaincode querycommitted --channelID mychannel --name ${CC_NAME} --cafile $ORDERER_CA
 }
 
 PackageChaincode
@@ -131,7 +133,7 @@ CommitChaincode
 peer chaincode invoke -o localhost:7050 \
 --ordererTLSHostnameOverride orderer.example.com \
 --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
--C $CHANNEL_NAME -n cert \
+-C $CHANNEL_NAME -n ${CC_NAME} \
 --peerAddresses localhost:7051 --tlsRootCertFiles $PEER0_ORG1_CA \
 --peerAddresses localhost:9051 --tlsRootCertFiles $PEER0_ORG2_CA \
 -c '{"Args":[]}'
